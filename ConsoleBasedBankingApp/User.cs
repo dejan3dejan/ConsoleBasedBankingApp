@@ -10,15 +10,22 @@ namespace ConsoleBasedBankingApp
     {
         public string AccountNumber {  get; set; }
         public string FullName { get; set; }
-        public string PIN { get; set; } //Hashovati
+        public string HashedPIN { get; set; }
         public decimal Balance  { get; set; }
 
-        public User(string accountNumber, string fullName, string pin, decimal balance) 
+        public User() { }
+
+        public User(string accountNumber, string fullName, string hashedPIN, decimal balance) 
         {
             AccountNumber = accountNumber;
             FullName = fullName;
-            PIN = pin;
+            HashedPIN = hashedPIN;
             Balance = balance;
         }
+        public bool VerifyPIN(string pin)
+        {
+            return BCrypt.Net.BCrypt.Verify(pin, HashedPIN);
+        }
+
     }
 }

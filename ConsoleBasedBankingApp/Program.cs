@@ -1,5 +1,6 @@
 ﻿using ConsoleBasedBankingApp;
 using System;
+using BCrypt.Net;
 
 class Program
 {
@@ -19,22 +20,16 @@ class Program
 
             if (choice == "1")
             {
-                Console.Write("Unesite ime i prezime: ");
-                string fullName = Console.ReadLine();
-
-                Console.Write("Unesite PIN: ");
-                string pin = Console.ReadLine();
+                string fullName = GetValidStringInput("Unesite ime i prezime: ");
+                string pin = GetValidStringInput("Unesite PIN: ");
 
                 bank.RegisterUser(fullName, pin);
                 fileManager.SaveUsers(bank.GetUsers());
             }
             else if(choice == "2")
             {
-                Console.Write("Unesite broj bankovnog racuna: ");
-                string accountNumber = Console.ReadLine();
-
-                Console.Write("Unesite PIN: ");
-                string pin = Console.ReadLine();
+                string accountNumber = GetValidStringInput("Unesite broj bankovnog racuna: ");
+                string pin = GetValidStringInput("Unesite PIN: ");
 
                 User user = bank.Login(accountNumber, pin);
 
@@ -72,16 +67,14 @@ class Program
             }
             else if( choice == "2")
             {
-                Console.WriteLine("Unesite iznos za uplatu: ");
-                decimal amount = decimal.Parse(Console.ReadLine());
+                decimal amount = GetValidDecimalInput("Unesite iznos za uplatu: ");
 
                 bank.Deposit(user, amount);
                 fileManager.SaveUsers(fileManager.GetUsers());
             }
             else if( choice == "3")
             {
-                Console.WriteLine("Unesite iznos za isplatu: ");
-                decimal amount = decimal.Parse(Console.ReadLine());
+                decimal amount = GetValidDecimalInput("Unesite iznos za isplatu: ");
 
                 bank.Withdraw(user, amount);
                 fileManager.SaveUsers(fileManager.GetUsers());
@@ -91,8 +84,7 @@ class Program
                 Console.WriteLine();
                 string receiverAccount = Console.ReadLine();
 
-                Console.WriteLine("Unesite iznos za transfer: ");
-                decimal amount = decimal.Parse(Console.ReadLine());
+                decimal amount = GetValidDecimalInput("Unesite iznos za transfer: ");
 
                 bank.Transfer(user, receiverAccount, amount);
                 fileManager.SaveUsers(fileManager.GetUsers());
@@ -102,5 +94,34 @@ class Program
                 break;
             }
         }
+    }
+
+    static string GetValidStringInput(string message)
+    {
+        string input;
+        do
+        {
+            Console.Write(message);
+            input = Console.ReadLine().Trim();
+        } while(string.IsNullOrEmpty(input));
+
+        return input;
+    }
+
+    static decimal GetValidDecimalInput(string message)
+    {
+        decimal result;
+        while (true)
+        {
+            Console.Write(message);
+            string input = Console.ReadLine();
+
+            if(decimal.TryParse(input, out result) && result > 0)
+            {
+                return result;
+            }
+            Console.WriteLine("Neispravan unos! Unesite broj veci od 0.");
+        }
+
     }
 }

@@ -22,14 +22,19 @@ namespace ConsoleBasedBankingApp
         public void RegisterUser(string fullName, string pin)
         {
             string accountNumber = GenerateAccountNumber();
-            User newUser = new User(accountNumber, fullName, pin, 0);
+            User newUser = new User(accountNumber, fullName, BCrypt.Net.BCrypt.HashPassword(pin), 0);
             users.Add(newUser);
             Console.WriteLine($"Uspesno kreiran nalog! Vas broj racuna je: {accountNumber}");
         }
 
         public User Login(string accountNumber, string pin)
         {
-            return users.FirstOrDefault(user => user.AccountNumber == accountNumber && user.PIN == pin);
+            User user = users.FirstOrDefault(u => u.AccountNumber == accountNumber);
+            if (user != null && user.VerifyPIN(pin))
+            {
+                return user;
+            }
+            return null;
         }
 
         public List<User> GetUsers()

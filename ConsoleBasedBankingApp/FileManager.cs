@@ -7,6 +7,9 @@ using System.IO;
 using System.Text.Json;
 using System.Reflection.Metadata;
 using ConsoleBasedBankingApp;
+using System.Xml;
+using Newtonsoft.Json;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace ConsoleBasedBankingApp
 {
@@ -14,27 +17,24 @@ namespace ConsoleBasedBankingApp
     {
         private const string filePath = "users.json";
 
-        public void SaveUsers(List<User> users)
-        {
-            string json = JsonSerializer.Serialize(users);
-            File.WriteAllText(filePath, json);
-        }
-
         public List<User> LoadUsers()
         {
-            if (File.Exists("users.json"))
-            {
-                string json = File.ReadAllText("users.json");
-                return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
-            }
-            return new List<User>();
+            if (!File.Exists(filePath)) return new List<User>();
+
+            string json = File.ReadAllText(filePath);
+            return JsonConvert.DeserializeObject<List<User>>(json) ?? new List<User>();
+        }
+
+        public void SaveUsers(List<User> users)
+        {
+            string json = JsonConvert.SerializeObject(
+                users, Formatting.Indented);
+            File.WriteAllText(filePath, json);
         }
 
         public List<User> GetUsers()
         {
             return LoadUsers();
         }
-
-
     }
 }

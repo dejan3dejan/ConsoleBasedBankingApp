@@ -57,7 +57,8 @@ class Program
             Console.WriteLine("2. Uplata");
             Console.WriteLine("3. Isplata");
             Console.WriteLine("4. Transfer");
-            Console.WriteLine("5. Izlaz");
+            Console.WriteLine("5. Istorija transakcija");
+            Console.WriteLine("6. Izlaz");
 
             string choice = Console.ReadLine();
 
@@ -81,7 +82,7 @@ class Program
             }
             else if( choice == "4")
             {
-                Console.WriteLine();
+                Console.WriteLine("Unesite racun primaoca: ");
                 string receiverAccount = Console.ReadLine();
 
                 decimal amount = GetValidDecimalInput("Unesite iznos za transfer: ");
@@ -90,6 +91,10 @@ class Program
                 fileManager.SaveUsers(fileManager.GetUsers());
             }
             else if (choice == "5")
+            {
+                bank.ShowTransactionHistory(user);
+            }
+            else if (choice == "6")
             {
                 break;
             }
@@ -122,6 +127,5 @@ class Program
             }
             Console.WriteLine("Neispravan unos! Unesite broj veci od 0.");
         }
-
     }
 }

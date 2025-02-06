@@ -13,7 +13,7 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace ConsoleBasedBankingApp
 {
-    class FileManager
+    public class FileManager
     {
         private const string filePath = "users.json";
 

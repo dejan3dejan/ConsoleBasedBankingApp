@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ConsoleBasedBankingApp
 {
-    class Bank
+    public class Bank
     {
         private List<User> users;
         private FileManager fileManager;
@@ -20,12 +20,15 @@ namespace ConsoleBasedBankingApp
             users = fileManager.LoadUsers();
         }
 
-        public void RegisterUser(string fullName, string pin)
+        public string RegisterUser(string fullName, string pin)
         {
             string accountNumber = GenerateAccountNumber();
             User newUser = new User(accountNumber, fullName, BCrypt.Net.BCrypt.HashPassword(pin), 0);
             users.Add(newUser);
-            Console.WriteLine($"Uspesno kreiran nalog! Vas broj racuna je: {accountNumber}");
+            Console.WriteLine($"\nUspesno kreiran nalog!");
+            Console.WriteLine($"Vas broj racuna je: {accountNumber}");
+            Console.WriteLine("\nZAPAMTITE VAŠ BROJ RAČUNA, TREBACE VAM ZA PRIJAVU!");
+            return accountNumber;
         }
 
         private Dictionary<string, int> failedLoginAttempts = new Dictionary<string, int>();
@@ -40,7 +43,6 @@ namespace ConsoleBasedBankingApp
                 return null;
             }
 
-            // Provera da li je korisnik blokiran
             if (failedLoginAttempts.ContainsKey(accountNumber) && failedLoginAttempts[accountNumber] >= 3)
             {
                 Console.WriteLine("Vaš nalog je privremeno zaključan zbog previše neuspešnih pokušaja.");

@@ -3,13 +3,15 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ConsoleBasedBankingApp
 {
-    public class Bank
+    public partial class Bank
     {
         private List<User> users;
         private FileManager fileManager;
@@ -81,23 +83,27 @@ namespace ConsoleBasedBankingApp
 
         public void Deposit(User user, decimal amount)
         {
+            string description = InputValidator.GetValidString("Unesite opis transakcije (opcionalno): ", 0, 100);
+            
             user.Balance += amount;
-
-            user.AddTransaction(new Transaction("Deposit", amount, null, user.AccountNumber));
+            user.AddTransaction(new Transaction("Deposit", amount, null, user.AccountNumber, description));
 
             fileManager.SaveUsers(users);
-            Console.WriteLine($"Uspesno ste uplatili {amount}RSD. Novo stanje na racunu je: {user.Balance}RSD");
+            Console.WriteLine($"\nUspesno ste uplatili {amount:N2}RSD");
+            Console.WriteLine($"Novo stanje na racunu je: {user.Balance:N2}RSD");
         }
         public void Withdraw(User user, decimal amount)
         {
             if(user.Balance >= amount)
             {
-                user.Balance -= amount;
+                string description = InputValidator.GetValidString("Unesite opis transakcije (opcionalno): ", 0, 100);
 
-                user.AddTransaction(new Transaction("Withdraw", amount, user.AccountNumber, null));
+                user.Balance -= amount;
+                user.AddTransaction(new Transaction("Withdraw", amount, user.AccountNumber, null, description));
 
                 fileManager.SaveUsers(users);
-                Console.WriteLine($"Uspesno ste podigli {amount}RSD. Novo stranje na racunu je {user.Balance}RSD");
+                Console.WriteLine($"\nUspesno ste podigli {amount:N2}RSD");
+                Console.WriteLine($"Novo stanje na racunu je: {user.Balance:N2}RSD");
             }
             else
             {
@@ -108,27 +114,40 @@ namespace ConsoleBasedBankingApp
         public void Transfer(User sender, string receiverAccountNumber, decimal amount)
         {
             User receiver = users.FirstOrDefault(u => u.AccountNumber == receiverAccountNumber);
-            Console.WriteLine($"Transferujete sredstva korisniku {receiver.FullName}. Unesite kolicinu koju zelite da transferujete: ");
 
             if(receiver != null && sender.Balance >= amount)
             {
+                Console.WriteLine($"Transferujete sredstva korisniku {receiver.FullName}");
+                string description = InputValidator.GetValidString("Unesite opis transakcije (opcionalno): ", 0, 100);
+
                 sender.Balance -= amount;
                 receiver.Balance += amount;
 
-                sender.Transactions.Add(new Transaction("Transfer Out", amount, sender.AccountNumber, receiver.AccountNumber));
-                receiver.Transactions.Add(new Transaction("Transfer In", amount, sender.AccountNumber, receiver.AccountNumber));
+                var transferOut = new Transaction("Transfer Out", amount, sender.AccountNumber, receiver.AccountNumber, description);
+                var transferIn = new Transaction("Transfer Out", amount, sender.AccountNumber, receiver.AccountNumber, description)
+                {
+                    Reference = transferOut.Reference
+                };
+
+                sender.AddTransaction(transferOut);
+                receiver.AddTransaction(transferIn);
 
                 fileManager.SaveUsers(users);
-                Console.WriteLine($"Uspesno ste poslali {amount}RSD korisniku {receiver.FullName}.");
+                Console.WriteLine($"\nUspesno ste poslali {amount:N2}RSD korisniku {receiver.FullName}");
+                Console.WriteLine($"Referenca transakcije: {transferOut.Reference}");
             }
             else
             {
-                Console.WriteLine("Nemate dovoljno sredstava!");
+                if (receiver == null)
+                    Console.WriteLine("Racun primaoca nije pronadjen!");
+                else
+                    Console.WriteLine("Nemate dovoljno sredstava!");
             }
         }
         public void ShowTransactionHistory(User user)
         {
-            Console.WriteLine("\nISTORIJA TRANSAKCIJA");
+            Console.Clear();
+            Console.WriteLine("\n=== ISTORIJA TRANSAKCIJA ===\n");
 
             if (user.Transactions.Count == 0)
             {
@@ -136,16 +155,39 @@ namespace ConsoleBasedBankingApp
                 return;
             }
 
-            Console.WriteLine("----------------------------------------------------");
-            Console.WriteLine("| Tip         | Iznos      | Od        | Ka        |");
-            Console.WriteLine("----------------------------------------------------");
+            int dateWidth = 19;
+            int typeWidth = 10;
+            int amountWidth = 15;
+            int descWidth = 30;
 
-            foreach (var transaction in user.Transactions)
+            // Header
+            string header = $"|{"Datum i vreme".PadRight(dateWidth)}|" +
+                            $"{"Tip".PadRight(typeWidth)}|" +
+                            $"{"Iznos".PadRight(amountWidth)}|" +
+                            $"{"Opis".PadRight(descWidth)}|";
+
+            string separator = new string('-', header.Length);
+
+            Console.WriteLine(separator);
+            Console.WriteLine(header);
+            Console.WriteLine(separator);
+
+            // Printanje Transakcija
+            foreach (var transaction in user.Transactions.OrderByDescending(t => t.Timestamp))
             {
-                Console.WriteLine($"| {transaction.Type,-10} | {transaction.Amount,10} RSD | {transaction.SenderAccount ?? "N/A",-8} | {transaction.ReceiverAccount ?? "N/A",-8} |");
+                string amount = transaction.Type.Contains("Out") ?
+                    $"-{transaction.Amount:N2}" :
+                    $"+{transaction.Amount:N2}";
+
+                Console.WriteLine($"|{transaction.Timestamp.ToString("dd.MM.yyyy HH:mm:ss").PadRight(dateWidth)}|" +
+                                  $"{transaction.Type.PadRight(typeWidth)}|" +
+                                  $"{amount.PadRight(amountWidth)}|" +
+                                  $"{(transaction.Description ?? "").PadRight(descWidth)}|");
             }
 
-            Console.WriteLine("----------------------------------------------------");
+            Console.WriteLine(separator);
+            Console.WriteLine($"\nUkupan broj transakcija: {user.Transactions.Count}");
+            Console.WriteLine($"Trenutno stanje: {user.Balance:N2} RSD\n");
         }
     }
 }
